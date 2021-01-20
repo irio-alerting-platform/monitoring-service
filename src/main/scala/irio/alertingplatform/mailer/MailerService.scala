@@ -3,7 +3,7 @@ package irio.alertingplatform.mailer
 import akka.actor.ActorSystem
 import courier.{Envelope, Mailer, Text}
 import irio.alertingplatform.mailer.MailerServiceConfig.MailerConfig
-import irio.alertingplatform.monitoring.MonitoringService.MonitoringUrl
+import irio.alertingplatform.monitoring.MonitoringRunnable.MonitoringUrl
 import irio.alertingplatform.redis.MonitoringRedisClient
 import irio.alertingplatform.utils.LoggingSupport
 import javax.mail.internet.InternetAddress
@@ -27,7 +27,7 @@ class MailerService(config: MailerConfig, redisClient: MonitoringRedisClient)(
   def sendMail(monitoringUrl: MonitoringUrl): Unit = {
     logger.info("Sending email from {} to {}", config.from, monitoringUrl.adminFst)
 
-    /* Set alert about url received to false */
+    /* Insert URL to redis. Will be deleted if admin goes to confirmation link. */
     redisClient.redis.set(monitoringUrl.id, false)
 
     send(config.from, monitoringUrl.adminFst, monitoringUrl.id, monitoringUrl.url, monitoringUrl.externalIp)
