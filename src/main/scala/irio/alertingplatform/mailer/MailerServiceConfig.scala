@@ -11,4 +11,5 @@ object MailerServiceConfig {
     pass: String,
     responseUrl: (String, Int) => String
   )
+
 }

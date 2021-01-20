@@ -11,7 +11,8 @@ import javax.mail.internet.InternetAddress
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success}
 
-class MailerService(config: MailerConfig, redisClient: MonitoringRedisClient)(implicit
+class MailerService(config: MailerConfig, redisClient: MonitoringRedisClient)(
+  implicit
   system: ActorSystem,
   ec: ExecutionContext
 ) extends LoggingSupport {
