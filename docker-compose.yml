@@ -1,0 +1,21 @@
+version: "3.8"
+services:
+  monitoring:
+    image: irio-monitoring-service:latest
+    restart: always
+    ports:
+      - "2137:2137"
+    environment:
+      - MAILER_HOST
+      - MAILER_PORT
+      - MAILER_FROM
+      - MAILER_PASS
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - redis
+  redis:
+    image: redis:6.0.10-alpine
+    restart: always
+    ports:
+      - "6379:6379"
