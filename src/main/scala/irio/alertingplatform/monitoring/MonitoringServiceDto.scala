@@ -2,7 +2,7 @@ package irio.alertingplatform.monitoring
 
 object MonitoringServiceDto {
 
-  case class MonitoringUrlsRequest(urls: List[MonitoringUrlDto])
+  case class MonitoringUrlsRequest(urls: List[MonitoringUrlDto], externalIp: String)
 
   case class MonitoringUrlDto(
     url: String,
@@ -10,8 +10,7 @@ object MonitoringServiceDto {
     adminSnd: String,
     frequencyMillis: Long,
     alertingWindow: Int,
-    allowedResponseTimeMillis: Long,
-    externalIp: String
+    allowedResponseTimeMillis: Long
   )
 
   case class MonitoringUrlsResponse(urls: List[String])

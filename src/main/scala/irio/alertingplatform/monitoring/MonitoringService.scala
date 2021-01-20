@@ -45,19 +45,21 @@ class MonitoringService(config: MonitoringConfig, mailerService: MailerService, 
     */
   def getUrlsToMonitor(request: MonitoringUrlsRequest): Future[MonitoringUrlsResponse] = {
     implicit val ec = system.dispatchers.lookup(BlockingDispatcher)
-    logger.info("Received URLs to monitor {}", request.urls)
+    val urls        = request.urls
+    val externalIp  = request.externalIp
+    logger.info("Received URLs to monitor {}, external ip {}", urls, externalIp)
 
     /* Cancel all previous monitoring workers */
     runningTasks.foreach(cancellable => cancellable.cancel())
 
     /* Give each URL an id and start workers for new URLs */
-    request.urls.zipWithIndex.foreach {
+    urls.zipWithIndex.foreach {
       case (url, id) =>
         logger.info("{}: {}", id, url.url)
         val DelayMillis = FiniteDuration(url.frequencyMillis, TimeUnit.MILLISECONDS)
         runningTasks.addOne {
           system.scheduler.scheduleWithFixedDelay(InitialDelayMillis, DelayMillis)(
-            monitoringRunnable(MonitoringUrl.apply(id, url))
+            monitoringRunnable(MonitoringUrl.apply(id, url, externalIp))
           )
         }
         monitoringErrors.addOne(new ErrorCount(url.alertingWindow))
@@ -91,13 +93,14 @@ class MonitoringService(config: MonitoringConfig, mailerService: MailerService, 
           logger.error("Request failed for URL {} with exception {}", monitoringUrl, exception.getMessage)
         case Success(HttpResponse(statusCode @ StatusCodes.OK, _, requestEntity, _)) =>
           requestEntity.discardBytes()
+          logger.info("Request returned status code {} for URL {}", statusCode, monitoringUrl)
+        case Success(HttpResponse(statusCode, _, requestEntity, _)) =>
+          requestEntity.discardBytes()
           logger.warn("Request returned status code {} for URL {}", statusCode, monitoringUrl)
           if (updateCount(monitoringUrl)) {
             logger.warn("Error limit reached for URL {}", monitoringUrl)
             alertUsers(monitoringUrl)
           }
-        case Success(HttpResponse(statusCode, _, _, _)) =>
-          logger.info("Request returned status code {} for URL {}", statusCode, monitoringUrl)
         case _ => logger.warn("Request didn't return HttpResponse")
       }
     }
@@ -149,7 +152,7 @@ object MonitoringService {
     externalIp: String
   )
   object MonitoringUrl {
-    def apply(id: Int, dto: MonitoringUrlDto): MonitoringUrl =
+    def apply(id: Int, dto: MonitoringUrlDto, externalIp: String): MonitoringUrl =
       MonitoringUrl(
         id,
         dto.url,
@@ -157,7 +160,7 @@ object MonitoringService {
         new InternetAddress(dto.adminSnd),
         dto.alertingWindow,
         FiniteDuration(dto.allowedResponseTimeMillis, TimeUnit.MILLISECONDS),
-        dto.externalIp
+        externalIp
       )
   }
 

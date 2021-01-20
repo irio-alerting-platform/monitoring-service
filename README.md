@@ -15,5 +15,5 @@ You should provide a file with the following environment variables:
 
 Run services in Docker:
 
-`docker run --env-file=<env_file> irio-monitoring-service`
+`docker-compose --env-file=<env_file> up`
 
