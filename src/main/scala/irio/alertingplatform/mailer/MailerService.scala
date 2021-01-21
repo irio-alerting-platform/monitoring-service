@@ -4,14 +4,14 @@ import akka.actor.ActorSystem
 import courier.{Envelope, Mailer, Text}
 import irio.alertingplatform.mailer.MailerServiceConfig.MailerConfig
 import irio.alertingplatform.monitoring.MonitoringRunnable.MonitoringUrl
-import irio.alertingplatform.redis.MonitoringRedisClient
 import irio.alertingplatform.utils.LoggingSupport
 import javax.mail.internet.InternetAddress
+import redis.clients.jedis.Jedis
 
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success}
 
-class MailerService(config: MailerConfig, redisClient: MonitoringRedisClient)(
+class MailerService(config: MailerConfig, redisClient: Jedis)(
   implicit
   system: ActorSystem,
   ec: ExecutionContext
@@ -19,22 +19,23 @@ class MailerService(config: MailerConfig, redisClient: MonitoringRedisClient)(
 
   private val EmailSubject = "Alerting platform – services are down!"
 
-  private val mailer = Mailer(config.host, config.port)
-    .auth(true)
-    .as(config.from.toString, config.pass)
-    .startTls(true)()
+  private[mailer] def mailer: Mailer =
+    Mailer(config.host, config.port)
+      .auth(true)
+      .as(config.from.toString, config.pass)
+      .startTls(true)()
 
   def sendMail(monitoringUrl: MonitoringUrl): Unit = {
     logger.info("Sending email from {} to {}", config.from, monitoringUrl.adminFst)
 
     /* Insert URL to redis. Will be deleted if admin goes to confirmation link. */
-    redisClient.redis.set(monitoringUrl.id, false)
+    redisClient.set(monitoringUrl.id.toString, "1")
 
     send(config.from, monitoringUrl.adminFst, monitoringUrl.id, monitoringUrl.url, monitoringUrl.externalIp)
   }
 
   def sendBackupMail(monitoringUrl: MonitoringUrl): Unit =
-    if (redisClient.redis.get(monitoringUrl.id).nonEmpty) {
+    if (redisClient.get(monitoringUrl.id.toString).nonEmpty) {
       logger.info("Sending email from {} to {}", config.from, monitoringUrl.adminSnd)
       send(config.from, monitoringUrl.adminSnd, monitoringUrl.id, monitoringUrl.url, monitoringUrl.externalIp)
     }

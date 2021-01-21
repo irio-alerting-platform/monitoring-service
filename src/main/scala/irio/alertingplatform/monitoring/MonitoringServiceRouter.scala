@@ -19,10 +19,10 @@ class MonitoringServiceRouter(monitoringService: MonitoringService)(implicit ec:
             .map[ToResponseMarshallable](res => OK -> res)
         }
       } ~
-        (path("mailer" / IntNumber) & pathEndOrSingleSlash & get) { id =>
+        (path("confirmation" / IntNumber) & pathEndOrSingleSlash & get) { id =>
           complete {
             monitoringService
-              .handleAdminResponse(id)
+              .handleConfirmation(id)
               .map(_ => OK)
           }
         }

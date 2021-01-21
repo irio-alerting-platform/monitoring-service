@@ -3,25 +3,31 @@ version := "0.1"
 scalaVersion := "2.13.4"
 
 libraryDependencies ++= {
-  val akkaV     = "2.6.11"
-  val akkaHttpV = "10.2.2"
-  val logbackV  = "1.2.3"
-  val courierV  = "2.0.0"
-  val redisV    = "3.30"
-  val specsV    = "4.10.6"
-  val mockitoV  = "1.16.15"
+  val akkaV           = "2.6.11"
+  val akkaHttpV       = "10.2.2"
+  val logbackV        = "1.2.3"
+  val courierV        = "2.0.0"
+  val jedisV          = "3.5.0"
+  val loggingV        = "2.1.2"
+  val loggingLogbackV = "0.119.4-alpha"
+  val specsV          = "4.10.6"
+  val mockitoV        = "1.16.15"
+  val javaMailV       = "1.9"
 
   Seq(
-    "com.typesafe.akka"     %% "akka-actor-typed"     % akkaV,
-    "com.typesafe.akka"     %% "akka-stream"          % akkaV,
-    "com.typesafe.akka"     %% "akka-testkit"         % akkaV    % Test,
-    "com.typesafe.akka"     %% "akka-http"            % akkaHttpV,
-    "com.typesafe.akka"     %% "akka-http-spray-json" % akkaHttpV,
-    "ch.qos.logback"         % "logback-classic"      % logbackV,
-    "com.github.daddykotex" %% "courier"              % courierV,
-    "net.debasishg"         %% "redisclient"          % redisV,
-    "org.specs2"            %% "specs2-core"          % specsV   % Test,
-    "org.mockito"           %% "mockito-scala"        % mockitoV % Test
+    "com.typesafe.akka"       %% "akka-actor-typed"            % akkaV,
+    "com.typesafe.akka"       %% "akka-stream"                 % akkaV,
+    "com.typesafe.akka"       %% "akka-http"                   % akkaHttpV,
+    "com.typesafe.akka"       %% "akka-http-spray-json"        % akkaHttpV,
+    "com.typesafe.akka"       %% "akka-slf4j"                  % akkaV,
+    "ch.qos.logback"          % "logback-classic"              % logbackV,
+    "com.github.daddykotex"   %% "courier"                     % courierV,
+    "redis.clients"           % "jedis"                        % jedisV,
+    "com.google.cloud"        % "google-cloud-logging"         % loggingV,
+    "com.google.cloud"        % "google-cloud-logging-logback" % loggingLogbackV,
+    "org.specs2"              %% "specs2-core"                 % specsV % Test,
+    "org.mockito"             %% "mockito-scala"               % mockitoV % Test,
+    "org.jvnet.mock-javamail" % "mock-javamail"                % javaMailV % Test
   )
 }
 
