@@ -1,0 +1,65 @@
+steps:
+
+- id: 'compile monitoring'
+  name: 'mozilla/sbt'
+  entrypoint: sbt
+  args: ['docker:stage']
+  waitFor: ['-']
+
+- id: 'build monitoring container'
+  name: 'gcr.io/cloud-builders/docker'
+  args: [ 'build', '-t', 'gcr.io/$PROJECT_ID/monitoring-service:$SHORT_SHA', './target/docker/stage' ]
+  waitFor: [ 'compile monitoring' ]
+
+- id: 'push monitoring container'
+  name: 'gcr.io/cloud-builders/docker'
+  args: [ 'push', 'gcr.io/$PROJECT_ID/monitoring-service:$SHORT_SHA']
+  waitFor: ['build monitoring container']
+
+- id: 'substitute monitoring deployment file for staging'
+  name: 'bash'
+  entrypoint: /bin/sh
+  args:
+  - -c
+  - |
+    sed "s/{{PROJECT_ID}}/$PROJECT_ID/g" ./k8.yaml > /workspace/k8_staging_temp.yaml &&
+    sed "s/{{SHORT_SHA}}/$SHORT_SHA/g" /workspace/k8_staging_temp.yaml > /workspace/k8_staging_temp2.yaml &&
+    sed "s/{{NAMESPACE}}/${_STAGING_NS}/g" /workspace/k8_staging_temp2.yaml > /workspace/k8_staging.yaml
+  waitFor: ['-']
+
+- id: 'deploy monitoring to staging'
+  name: "gcr.io/cloud-builders/kubectl"
+  args:
+  - apply
+  - -f=/workspace/k8_staging.yaml
+  - -n=${_STAGING_NS}
+  waitFor: ['push monitoring container', 'substitute monitoring deployment file for staging']
+
+- id: 'substitute monitoring deployment file for production'
+  name: 'bash'
+  entrypoint: /bin/sh
+  args:
+  - -c
+  - |
+    sed "s/{{PROJECT_ID}}/$PROJECT_ID/g" ./k8.yaml > /workspace/k8_production_temp.yaml &&
+    sed "s/{{SHORT_SHA}}/$SHORT_SHA/g" /workspace/k8_production_temp.yaml > /workspace/k8_production_temp2.yaml &&
+    sed "s/{{NAMESPACE}}/${_PRODUCTION_NS}/g" /workspace/k8_production_temp2.yaml > /workspace/k8_production.yaml
+  waitFor: ['-']
+
+- id: 'deploy monitoring to production'
+  name: "gcr.io/cloud-builders/kubectl"
+  args:
+  - apply
+  - -f=/workspace/k8_production.yaml
+  - -n=${_PRODUCTION_NS}
+  waitFor: ['push monitoring container', 'substitute monitoring deployment file for production']
+
+substitutions:
+  _STAGING_NS: staging
+  _PRODUCTION_NS: production
+
+options:
+  env:
+    # location/name of GKE cluster (used by all kubectl commands)
+    - CLOUDSDK_COMPUTE_ZONE=us-central1-c
+    - CLOUDSDK_CONTAINER_CLUSTER=cluster-1

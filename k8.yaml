@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{NAMESPACE}}
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: monitoring-depl
+  namespace: {{NAMESPACE}}
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: monitoring-app
+  template:
+    metadata:
+      labels:
+        app: monitoring-app
+    spec:
+      containers:
+        - name: monitoring-container
+          image: "gcr.io/{{PROJECT_ID}}/monitoring-service:{{SHORT_SHA}}"
+          ports:
+            - name: http-port
+              containerPort: 2137
+          env: # TODO set proper environment variables
+            - name: MAILER_HOST
+              value: "asd.pl"
+            - name: MAILER_PORT
+              value: "1234"
+            - name: MAILER_FROM
+              value: "a@w.pl"
+            - name: MAILER_PASS
+              value: "tmp123"
+            - name: REDIS_HOST
+              value: "redis"
+            - name: REDIS_PORT
+              value: "6379"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-single-instance
+  namespace: {{NAMESPACE}}
+  labels:
+    app: redis
+spec:
+  selector:
+    matchLabels:
+      app: redis
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+        - name: master
+          image: redis:6.0.10-alpine
+          ports:
+            - containerPort: 6379
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: monitoring-service
+  namespace: {{NAMESPACE}}
+spec:
+  type: LoadBalancer
+  ports:
+    - name: http-port
+      port: 80
+      targetPort: http-port
+      protocol: TCP
+  selector:
+    app: monitoring-app
