@@ -1,8 +1,8 @@
 package irio.alertingplatform.monitoring
 
-object MonitoringServiceDto {
+import java.util.UUID
 
-  case class MonitoringUrlsRequest(urls: List[MonitoringUrlDto], externalIp: String)
+object MonitoringServiceDto {
 
   case class MonitoringUrlDto(
     url: String,
@@ -13,6 +13,10 @@ object MonitoringServiceDto {
     allowedResponseTimeMillis: Long
   )
 
+  case class MonitoringUrlsRequest(urls: List[MonitoringUrlDto], externalIp: String)
+
   case class MonitoringUrlsResponse(urls: List[String])
+
+  case class MonitoringConfirmationResponse(id: UUID)
 
 }

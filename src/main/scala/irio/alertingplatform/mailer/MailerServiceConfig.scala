@@ -1,15 +1,19 @@
 package irio.alertingplatform.mailer
 
+import com.typesafe.config.Config
 import javax.mail.internet.InternetAddress
 
 object MailerServiceConfig {
 
-  case class MailerConfig(
-    host: String,
-    port: Int,
-    from: InternetAddress,
-    pass: String,
-    responseUrl: (String, Int) => String
-  )
+  case class MailerConfig(host: String, port: Int, from: InternetAddress, pass: String, httpPort: Int)
+  object MailerConfig {
+    def apply(config: Config): MailerConfig = MailerConfig(
+      host     = config.getString("mailer.host"),
+      port     = config.getInt("mailer.port"),
+      from     = new InternetAddress(config.getString("mailer.from")),
+      pass     = config.getString("mailer.pass"),
+      httpPort = config.getInt("http.port")
+    )
+  }
 
 }

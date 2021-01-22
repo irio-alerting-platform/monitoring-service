@@ -1,5 +1,6 @@
 package irio.alertingplatform.monitoring
 
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystem
@@ -10,12 +11,13 @@ import irio.alertingplatform.monitoring.MonitoringRunnable.MonitoringUrl
 import irio.alertingplatform.monitoring.MonitoringServiceDto.MonitoringUrlDto
 import irio.alertingplatform.utils.LoggingSupport
 import javax.mail.internet.InternetAddress
+import redis.clients.jedis.Jedis
 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Random, Success}
 
-class MonitoringRunnable(monitoringUrl: MonitoringUrl, mailerService: MailerService)(
+class MonitoringRunnable(monitoringUrl: MonitoringUrl, mailerService: MailerService, redisClient: Jedis)(
   implicit system: ActorSystem,
   ec: ExecutionContext
 ) extends Runnable
@@ -43,7 +45,7 @@ class MonitoringRunnable(monitoringUrl: MonitoringUrl, mailerService: MailerServ
       case Success(HttpResponse(statusCode, _, requestEntity, _)) =>
         requestEntity.discardBytes()
         logger.warn("Request returned status code {} for URL {}", statusCode, monitoringUrl)
-        if (updateCount(monitoringUrl)) {
+        if (updateCount(monitoringUrl) && (redisClient.get(monitoringUrl.id.toString) == null)) {
           logger.warn("Error limit reached for URL {}", monitoringUrl)
           alertUsers(monitoringUrl)
         }
@@ -90,7 +92,7 @@ object MonitoringRunnable {
   val InitialDelayUpperBoundMillis = 2000
 
   case class MonitoringUrl(
-    id: Int,
+    id: UUID,
     url: String,
     externalIp: String,
     adminFst: InternetAddress,
@@ -101,9 +103,9 @@ object MonitoringRunnable {
     allowedResponseTime: FiniteDuration
   )
   object MonitoringUrl {
-    def apply(id: Int, dto: MonitoringUrlDto, externalIp: String): MonitoringUrl =
+    def apply(dto: MonitoringUrlDto, externalIp: String): MonitoringUrl =
       MonitoringUrl(
-        id                  = id,
+        id                  = UUID.randomUUID(),
         url                 = dto.url,
         externalIp          = externalIp,
         adminFst            = new InternetAddress(dto.adminFst),

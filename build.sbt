@@ -12,22 +12,22 @@ libraryDependencies ++= {
   val loggingLogbackV = "0.119.4-alpha"
   val specsV          = "4.10.6"
   val mockitoV        = "1.16.15"
-  val javaMailV       = "1.9"
 
   Seq(
-    "com.typesafe.akka"       %% "akka-actor-typed"            % akkaV,
-    "com.typesafe.akka"       %% "akka-stream"                 % akkaV,
-    "com.typesafe.akka"       %% "akka-http"                   % akkaHttpV,
-    "com.typesafe.akka"       %% "akka-http-spray-json"        % akkaHttpV,
-    "com.typesafe.akka"       %% "akka-slf4j"                  % akkaV,
-    "ch.qos.logback"          % "logback-classic"              % logbackV,
-    "com.github.daddykotex"   %% "courier"                     % courierV,
-    "redis.clients"           % "jedis"                        % jedisV,
-    "com.google.cloud"        % "google-cloud-logging"         % loggingV,
-    "com.google.cloud"        % "google-cloud-logging-logback" % loggingLogbackV,
-    "org.specs2"              %% "specs2-core"                 % specsV % Test,
-    "org.mockito"             %% "mockito-scala"               % mockitoV % Test,
-    "org.jvnet.mock-javamail" % "mock-javamail"                % javaMailV % Test
+    "com.typesafe.akka"     %% "akka-actor-typed"            % akkaV,
+    "com.typesafe.akka"     %% "akka-stream"                 % akkaV,
+    "com.typesafe.akka"     %% "akka-http"                   % akkaHttpV,
+    "com.typesafe.akka"     %% "akka-http-spray-json"        % akkaHttpV,
+    "com.typesafe.akka"     %% "akka-slf4j"                  % akkaV,
+    "ch.qos.logback"        % "logback-classic"              % logbackV,
+    "com.github.daddykotex" %% "courier"                     % courierV,
+    "redis.clients"         % "jedis"                        % jedisV,
+    "com.google.cloud"      % "google-cloud-logging"         % loggingV,
+    "com.google.cloud"      % "google-cloud-logging-logback" % loggingLogbackV,
+    "org.specs2"            %% "specs2-core"                 % specsV % Test,
+    "org.mockito"           %% "mockito-scala"               % mockitoV % Test,
+    "com.typesafe.akka"     %% "akka-stream-testkit"         % akkaV % Test,
+    "com.typesafe.akka"     %% "akka-http-testkit"           % akkaHttpV % Test
   )
 }
 
@@ -37,7 +37,7 @@ scalafmtOnCompile := true
 enablePlugins(JavaAppPackaging)
 enablePlugins(DockerPlugin)
 
-packageName := "irio-monitoring-service"
-dockerBaseImage := "hseeberger/scala-sbt:11.0.9.1_1.4.6_2.13.4"
+packageName := "monitoring-service"
+dockerBaseImage := "adoptopenjdk:11-jre-hotspot"
 daemonUser in Docker := "root"
 dockerUpdateLatest := true

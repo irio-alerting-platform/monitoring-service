@@ -3,6 +3,7 @@ package irio.alertingplatform.monitoring
 import akka.actor.ActorSystem
 import irio.alertingplatform.monitoring.MonitoringRunnable.MonitoringUrl
 import irio.alertingplatform.monitoring.MonitoringServiceDto.{
+  MonitoringConfirmationResponse,
   MonitoringUrlDto,
   MonitoringUrlsRequest,
   MonitoringUrlsResponse
@@ -41,29 +42,46 @@ class MonitoringServiceSpec(implicit ee: ExecutionEnv)
     MonitoringUrlsRequest(urls, externalIp)
 
   "getNewUrls" should {
-    "return URLs received for monitoring" in new TestCase {
+    "return received urls" in new TestCase {
       // given
       val externalIp            = "0.0.0.0"
-      val urls                  = List.range(0, 4).map(id => MonitoringUrlGenerator.generate(id = id, externalIp = externalIp))
+      val urls                  = List.fill(5)(MonitoringUrlGenerator.generate(externalIp = externalIp))
       val monitoringUrlsRequest = generateRequest(urls.map(generateDto), externalIp)
 
       // when
-      val result = monitoringService.getUrlsToMonitor(monitoringUrlsRequest)
+      val result = monitoringService.getUrls(monitoringUrlsRequest)
 
       // then
       result must beEqualTo(MonitoringUrlsResponse(monitoringUrlsRequest.urls.map(_.url))).await
     }
-    "return empty list if URLs list is empty" in new TestCase {
+    "return empty list if no urls were received" in new TestCase {
       // given
       val externalIp            = "0.0.0.0"
       val urls                  = List()
       val monitoringUrlsRequest = generateRequest(urls.map(generateDto), externalIp)
 
       // when
-      val result = monitoringService.getUrlsToMonitor(monitoringUrlsRequest)
+      val result = monitoringService.getUrls(monitoringUrlsRequest)
 
       // then
       result must beEqualTo(MonitoringUrlsResponse(monitoringUrlsRequest.urls.map(_.url))).await
+    }
+  }
+  "handleConfirmation" should {
+    "delete mapping from redis and return url id" in new TestCase {
+      // given
+      val url         = MonitoringUrlGenerator.generate()
+      val keysDeleted = 1
+
+      // when
+      when(redisClient.del(url.id.toString)).thenReturn(keysDeleted)
+
+      val result = monitoringService.getConfirmation(url.id)
+
+      // then
+      result must beEqualTo(MonitoringConfirmationResponse(url.id)).await
+
+      verify(redisClient, times(1)).del(url.id.toString)
     }
   }
 

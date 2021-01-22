@@ -1,22 +1,18 @@
 package irio.alertingplatform.mailer
 
-import java.util.Properties
-
 import akka.actor.ActorSystem
 import courier.{Envelope, Mailer, Text}
 import irio.alertingplatform.mailer.MailerServiceConfig.MailerConfig
+import irio.alertingplatform.monitoring.MonitoringUrlGenerator
 import irio.alertingplatform.utils.LoggingSupport
-import javax.mail.Provider
 import javax.mail.internet.InternetAddress
-import org.jvnet.mock_javamail.{Mailbox, MockTransport}
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mutable.SpecificationLike
 import org.specs2.specification.Scope
 import redis.clients.jedis.Jedis
 
-import scala.concurrent.Await
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.Future
 
 class MailerServiceSpec(implicit ee: ExecutionEnv)
     extends SpecificationLike
@@ -26,49 +22,105 @@ class MailerServiceSpec(implicit ee: ExecutionEnv)
 
   implicit val system = ActorSystem("test")
 
+  val mailerConfig =
+    MailerConfig(
+      host     = "example-host",
+      port     = 587,
+      from     = new InternetAddress("from@example.com"),
+      pass     = "password1234",
+      httpPort = 2137
+    )
+
   trait TestCase extends Scope {
-    private val mockedSession = javax.mail.Session.getDefaultInstance(new Properties() {
-      {
-        put("mail.transport.protocol.rfc822", "mocked")
-      }
-    })
-    mockedSession.setProvider(new MockedSMTPProvider)
-    val mailerConfig = mock[MailerConfig]
-    val jedis        = mock[Jedis]
-    val mailerService = new MailerService(mailerConfig, jedis) {
-      override def mailer: Mailer = Mailer(mockedSession)
+    val redisClient = mock[Jedis]
+    val mockMailer  = mock[Mailer]
+    val mailerService = new MailerService(mailerConfig, redisClient) {
+      override def mailer: Mailer = mockMailer
     }
   }
 
-  "mailer" should {
-    "send any email" in new TestCase {
+  "sendMail" should {
+    "send mail to first admin and insert mapping to redis" in new TestCase {
       // given
-      val from    = "from@example.com"
-      val to      = "to@example.com"
-      val subject = "Test subject"
-      val content = "Test content"
+      val url              = MonitoringUrlGenerator.generate()
+      val from             = mailerConfig.from
+      val to               = url.adminFst
+      val subject          = subjectString()
+      val confirmationLink = confirmationLinkString(mailerConfig.httpPort, url.externalIp, url.id)
+      val content          = contentString(url.url, confirmationLink)
 
       // when
-      val future = mailerService.mailer(
+      when(
+        mockMailer(
+          Envelope
+            .from(from)
+            .to(to)
+            .subject(subject)
+            .content(Text(content))
+        )
+      ).thenReturn(Future.successful())
+
+      mailerService.sendMail(url)
+
+      // then
+      verify(redisClient, times(1)).set(any, any)
+      verify(mockMailer, times(1))(
         Envelope
-          .from(new InternetAddress(from))
-          .to(new InternetAddress(to))
+          .from(from)
+          .to(to)
           .subject(subject)
           .content(Text(content))
       )
-
-      // then
-      Await.ready(future, 5.seconds)
-      val toInbox = Mailbox.get(to)
-      toInbox.size must beEqualTo(1)
-
-      val toMsg = toInbox.get(0)
-      toMsg.getSubject must beEqualTo(subject)
-      toMsg.getContent must beEqualTo(content)
     }
   }
 
-  private class MockedSMTPProvider
-      extends Provider(Provider.Type.TRANSPORT, "mocked", classOf[MockTransport].getName, "Mock", null)
+  "sendBackupMail" should {
+    "send mail to second admin" in new TestCase {
+      // given
+      val url              = MonitoringUrlGenerator.generate()
+      val from             = mailerConfig.from
+      val to               = url.adminSnd
+      val subject          = subjectString()
+      val confirmationLink = confirmationLinkString(mailerConfig.httpPort, url.externalIp, url.id)
+      val content          = contentString(url.url, confirmationLink)
 
+      // when
+      when(redisClient.get(url.id.toString)).thenReturn("1")
+
+      when(
+        mockMailer(
+          Envelope
+            .from(from)
+            .to(to)
+            .subject(subject)
+            .content(Text(content))
+        )
+      ).thenReturn(Future.successful())
+
+      mailerService.sendBackupMail(url)
+
+      // then
+      verify(redisClient, times(1)).get(url.id.toString)
+      verify(mockMailer, times(1))(
+        Envelope
+          .from(from)
+          .to(to)
+          .subject(subject)
+          .content(Text(content))
+      )
+    }
+    "not send mail to second admin if mapping from redis was removed" in new TestCase {
+      // given
+      val url = MonitoringUrlGenerator.generate()
+
+      // when
+      when(redisClient.get(url.id.toString)).thenReturn(null)
+
+      mailerService.sendBackupMail(url)
+
+      // then
+      verify(redisClient, times(1)).get(url.id.toString)
+      verify(mockMailer, times(0))
+    }
+  }
 }

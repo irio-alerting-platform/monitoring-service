@@ -1,9 +1,15 @@
 package irio.alertingplatform.monitoring
 
+import java.util.UUID
+
 import akka.actor.{ActorSystem, Cancellable}
 import akka.stream.Materializer
 import irio.alertingplatform.monitoring.MonitoringRunnable.MonitoringUrl
-import irio.alertingplatform.monitoring.MonitoringServiceDto.{MonitoringUrlsRequest, MonitoringUrlsResponse}
+import irio.alertingplatform.monitoring.MonitoringServiceDto.{
+  MonitoringConfirmationResponse,
+  MonitoringUrlsRequest,
+  MonitoringUrlsResponse
+}
 import irio.alertingplatform.utils.LoggingSupport
 import redis.clients.jedis.Jedis
 
@@ -24,7 +30,7 @@ class MonitoringService(monitoringSchedulerService: MonitoringSchedulerService, 
     * @param request Request with URLs to be monitored
     * @return response with received URLs
     */
-  def getUrlsToMonitor(request: MonitoringUrlsRequest): Future[MonitoringUrlsResponse] = {
+  def getUrls(request: MonitoringUrlsRequest): Future[MonitoringUrlsResponse] = {
     val urls       = request.urls
     val externalIp = request.externalIp
     logger.info("Received URLs {}, external IP {}", urls, externalIp)
@@ -33,11 +39,8 @@ class MonitoringService(monitoringSchedulerService: MonitoringSchedulerService, 
     runningTasks.foreach(cancellable => cancellable.cancel())
 
     /* Give each URL an id and start workers for new URLs */
-    urls.zipWithIndex.foreach {
-      case (url, id) =>
-        runningTasks.addOne(
-          monitoringSchedulerService.scheduleMonitoringRunnable(MonitoringUrl.apply(id, url, externalIp))
-        )
+    urls.foreach { url =>
+      runningTasks.addOne(monitoringSchedulerService.scheduleMonitoringRunnable(MonitoringUrl.apply(url, externalIp)))
     }
 
     Future.successful(MonitoringUrlsResponse(request.urls.map(_.url)))
@@ -49,10 +52,10 @@ class MonitoringService(monitoringSchedulerService: MonitoringSchedulerService, 
     * @param id of the URL
     * @return id of the URL
     */
-  def handleConfirmation(id: Int): Future[Int] = {
+  def getConfirmation(id: UUID): Future[MonitoringConfirmationResponse] = {
     val res = redisClient.del(id.toString)
     logger.info("Deleted {} keys for id {}", res, id)
-    Future.successful(id)
+    Future.successful(MonitoringConfirmationResponse(id))
   }
 
 }

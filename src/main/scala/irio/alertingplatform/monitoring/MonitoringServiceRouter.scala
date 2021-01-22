@@ -15,15 +15,15 @@ class MonitoringServiceRouter(monitoringService: MonitoringService)(implicit ec:
       (path("urls") & pathEndOrSingleSlash & post & entity(as[MonitoringUrlsRequest])) { request =>
         complete {
           monitoringService
-            .getUrlsToMonitor(request)
+            .getUrls(request)
             .map[ToResponseMarshallable](res => OK -> res)
         }
       } ~
-        (path("confirmation" / IntNumber) & pathEndOrSingleSlash & get) { id =>
+        (path("confirmation" / JavaUUID) & pathEndOrSingleSlash & get) { id =>
           complete {
             monitoringService
-              .handleConfirmation(id)
-              .map(_ => OK)
+              .getConfirmation(id)
+              .map[ToResponseMarshallable](res => OK -> res)
           }
         }
     }

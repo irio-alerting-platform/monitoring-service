@@ -1,5 +1,7 @@
 package irio.alertingplatform.mailer
 
+import java.util.UUID
+
 import akka.actor.ActorSystem
 import courier.{Envelope, Mailer, Text}
 import irio.alertingplatform.mailer.MailerServiceConfig.MailerConfig
@@ -17,8 +19,6 @@ class MailerService(config: MailerConfig, redisClient: Jedis)(
   ec: ExecutionContext
 ) extends LoggingSupport {
 
-  private val EmailSubject = "Alerting platform – services are down!"
-
   private[mailer] def mailer: Mailer =
     Mailer(config.host, config.port)
       .auth(true)
@@ -35,25 +35,31 @@ class MailerService(config: MailerConfig, redisClient: Jedis)(
   }
 
   def sendBackupMail(monitoringUrl: MonitoringUrl): Unit =
-    if (redisClient.get(monitoringUrl.id.toString).nonEmpty) {
+    if (redisClient.get(monitoringUrl.id.toString) != null) {
       logger.info("Sending email from {} to {}", config.from, monitoringUrl.adminSnd)
       send(config.from, monitoringUrl.adminSnd, monitoringUrl.id, monitoringUrl.url, monitoringUrl.externalIp)
     }
 
-  private def send(from: InternetAddress, to: InternetAddress, id: Int, url: String, externalIp: String) =
+  private def send(
+    fromAddr: InternetAddress,
+    toAddr: InternetAddress,
+    id: UUID,
+    url: String,
+    externalIp: String
+  ): Unit = {
+    val subject          = subjectString()
+    val confirmationLink = confirmationLinkString(config.httpPort, externalIp, id)
+    val content          = contentString(url, confirmationLink)
     mailer(
       Envelope
-        .from(from)
-        .to(to)
-        .subject(EmailSubject)
-        .content(Text(alertMessage(id, url, externalIp)))
+        .from(fromAddr)
+        .to(toAddr)
+        .subject(subject)
+        .content(Text(content))
     ).onComplete {
-      case Failure(exception) => logger.error("Failed sending email to {} with exception {}", to, exception)
-      case Success(_)         => logger.info("Successfully sent email to {}", to)
+      case Failure(exception) => logger.error("Failed sending email to {} with exception {}", toAddr, exception)
+      case Success(_)         => logger.info("Successfully sent email to {}", toAddr)
     }
-
-  private def alertMessage(id: Int, url: String, externalIp: String) = {
-    val responseLink = config.responseUrl(externalIp, id)
-    s"Service $url is down. If you've read this e-mail, confirm by going to $responseLink."
   }
+
 }

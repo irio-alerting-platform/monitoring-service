@@ -1,7 +1,7 @@
 version: "3.8"
 services:
   monitoring:
-    image: irio-monitoring-service:latest
+    image: monitoring-service:latest
     restart: always
     ports:
       - "2137:2137"
