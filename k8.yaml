@@ -29,7 +29,7 @@ spec:
             - name: MAILER_HOST
               valueFrom:
                 configMapKeyRef:
-                  name: {{NAMESPACE}}/monitoring-config
+                  name: monitoring-config
                   key: mailer_host
             - name: MAILER_PORT
               valueFrom:
