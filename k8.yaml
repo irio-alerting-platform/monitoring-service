@@ -25,15 +25,27 @@ spec:
           ports:
             - name: http-port
               containerPort: 2137
-          env: # TODO set proper environment variables
+          env:
             - name: MAILER_HOST
-              value: "asd.pl"
+              valueFrom:
+                configMapKeyRef:
+                  name: monitoring-config
+                  key: MAILER_HOST
             - name: MAILER_PORT
-              value: "1234"
+              valueFrom:
+                configMapKeyRef:
+                  name: monitoring-config
+                  key: MAILER_PORT
             - name: MAILER_FROM
-              value: "a@w.pl"
+              valueFrom:
+                secretKeyRef:
+                  name: monitoring-secret
+                  key: MAILER_FROM
             - name: MAILER_PASS
-              value: "tmp123"
+              valueFrom:
+                secretKeyRef:
+                  name: monitoring-secret
+                  key: MAILER_PASS
             - name: REDIS_HOST
               value: "redis"
             - name: REDIS_PORT

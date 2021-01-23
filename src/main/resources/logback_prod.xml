@@ -4,6 +4,7 @@
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
             <level>INFO</level>
         </filter>
+        <resourceType>k8s_pod</resourceType>
     </appender>
 
     <root level="INFO">

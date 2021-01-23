@@ -8,7 +8,6 @@ libraryDependencies ++= {
   val logbackV        = "1.2.3"
   val courierV        = "2.0.0"
   val jedisV          = "3.5.0"
-  val loggingV        = "2.1.2"
   val loggingLogbackV = "0.119.4-alpha"
   val specsV          = "4.10.6"
   val mockitoV        = "1.16.15"
@@ -22,7 +21,6 @@ libraryDependencies ++= {
     "ch.qos.logback"        % "logback-classic"              % logbackV,
     "com.github.daddykotex" %% "courier"                     % courierV,
     "redis.clients"         % "jedis"                        % jedisV,
-    "com.google.cloud"      % "google-cloud-logging"         % loggingV,
     "com.google.cloud"      % "google-cloud-logging-logback" % loggingLogbackV,
     "org.specs2"            %% "specs2-core"                 % specsV % Test,
     "org.mockito"           %% "mockito-scala"               % mockitoV % Test,
