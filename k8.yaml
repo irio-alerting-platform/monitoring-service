@@ -38,6 +38,8 @@ spec:
               value: "redis"
             - name: REDIS_PORT
               value: "6379"
+            - name: JAVA_OPTS
+              value: "-Dlogback.configurationFile=src/main/resources/logback_prod.xml"
 ---
 apiVersion: apps/v1
 kind: Deployment
