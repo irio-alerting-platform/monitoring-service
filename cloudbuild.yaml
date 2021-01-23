@@ -1,10 +1,16 @@
 steps:
 
+- id: 'test monitoring'
+  name: 'mozilla/sbt'
+  entrypoint: sbt
+  args: ['test']
+  waitFor: ['-']
+
 - id: 'compile monitoring'
   name: 'mozilla/sbt'
   entrypoint: sbt
   args: ['docker:stage']
-  waitFor: ['-']
+  waitFor: ['test monitoring']
 
 - id: 'build monitoring container'
   name: 'gcr.io/cloud-builders/docker'
