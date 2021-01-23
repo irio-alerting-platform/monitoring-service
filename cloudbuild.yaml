@@ -31,7 +31,7 @@ steps:
     sed "s/{{PROJECT_ID}}/$PROJECT_ID/g" ./k8.yaml > /workspace/k8_staging_temp.yaml &&
     sed "s/{{SHORT_SHA}}/$SHORT_SHA/g" /workspace/k8_staging_temp.yaml > /workspace/k8_staging_temp2.yaml &&
     sed "s/{{NAMESPACE}}/${_STAGING_NS}/g" /workspace/k8_staging_temp2.yaml > /workspace/k8_staging.yaml
-  waitFor: ['-']
+  waitFor: ['test monitoring']
 
 - id: 'deploy monitoring to staging'
   name: "gcr.io/cloud-builders/kubectl"
@@ -50,7 +50,7 @@ steps:
     sed "s/{{PROJECT_ID}}/$PROJECT_ID/g" ./k8.yaml > /workspace/k8_production_temp.yaml &&
     sed "s/{{SHORT_SHA}}/$SHORT_SHA/g" /workspace/k8_production_temp.yaml > /workspace/k8_production_temp2.yaml &&
     sed "s/{{NAMESPACE}}/${_PRODUCTION_NS}/g" /workspace/k8_production_temp2.yaml > /workspace/k8_production.yaml
-  waitFor: ['-']
+  waitFor: ['test monitoring']
 
 - id: 'deploy monitoring to production'
   name: "gcr.io/cloud-builders/kubectl"

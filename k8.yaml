@@ -29,29 +29,38 @@ spec:
             - name: MAILER_HOST
               valueFrom:
                 configMapKeyRef:
-                  name: monitoring-config
-                  key: MAILER_HOST
+                  name: {{NAMESPACE}}/monitoring-config
+                  key: mailer_host
             - name: MAILER_PORT
               valueFrom:
                 configMapKeyRef:
                   name: monitoring-config
-                  key: MAILER_PORT
+                  key: mailer_port
             - name: MAILER_FROM
               valueFrom:
                 secretKeyRef:
-                  name: monitoring-secret
-                  key: MAILER_FROM
+                  name: monitoring-secret-config
+                  key: mailer_from
             - name: MAILER_PASS
               valueFrom:
                 secretKeyRef:
-                  name: monitoring-secret
-                  key: MAILER_PASS
+                  name: monitoring-secret-config
+                  key: mailer_pass
             - name: REDIS_HOST
-              value: "redis"
+              valueFrom:
+                configMapKeyRef:
+                  name: monitoring-config
+                  key: redis_host
             - name: REDIS_PORT
-              value: "6379"
+              valueFrom:
+                configMapKeyRef:
+                  name: monitoring-config
+                  key: redis_port
             - name: JAVA_OPTS
-              value: "-Dlogback.configurationFile=src/main/resources/logback_prod.xml"
+              valueFrom:
+                configMapKeyRef:
+                  name: monitoring-config
+                  key: java_opts
 ---
 apiVersion: apps/v1
 kind: Deployment
