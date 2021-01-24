@@ -2,7 +2,6 @@ version: "3.8"
 services:
   monitoring:
     image: monitoring-service:latest
-    restart: always
     ports:
       - "2137:2137"
     environment:
@@ -12,10 +11,10 @@ services:
       - MAILER_PASS
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - JAVA_OPTS="-Dlogback.configurationFile=src/main/resources/logback.xml"
     depends_on:
       - redis
   redis:
     image: redis:6.0.10-alpine
-    restart: always
     ports:
       - "6379:6379"

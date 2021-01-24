@@ -2,6 +2,21 @@ name := "monitoring-service"
 version := "0.1"
 scalaVersion := "2.13.4"
 
+scalacOptions := Seq(
+  "-target:jvm-1.8",
+  "-unchecked",
+  "-deprecation",
+  "-feature",
+  "-encoding",
+  "utf8",
+  "-Ywarn-macros:after",
+  "-Ywarn-unused:imports",
+  "-Ywarn-unused:locals",
+  "-Ywarn-unused:privates",
+  "-Ymacro-annotations",
+  "-language:higherKinds"
+)
+
 libraryDependencies ++= {
   val akkaV           = "2.6.11"
   val akkaHttpV       = "10.2.2"

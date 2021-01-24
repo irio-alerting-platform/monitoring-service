@@ -58,7 +58,7 @@ class MailerServiceSpec(implicit ee: ExecutionEnv)
             .subject(subject)
             .content(Text(content))
         )
-      ).thenReturn(Future.successful())
+      ).thenReturn(Future.successful((): Unit))
 
       mailerService.sendMail(url)
 
@@ -95,7 +95,7 @@ class MailerServiceSpec(implicit ee: ExecutionEnv)
             .subject(subject)
             .content(Text(content))
         )
-      ).thenReturn(Future.successful())
+      ).thenReturn(Future.successful((): Unit))
 
       mailerService.sendBackupMail(url)
 
@@ -120,7 +120,6 @@ class MailerServiceSpec(implicit ee: ExecutionEnv)
 
       // then
       verify(redisClient, times(1)).get(url.id.toString)
-      verify(mockMailer, times(0))
     }
   }
 }

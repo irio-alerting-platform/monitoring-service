@@ -26,6 +26,11 @@ spec:
             - name: http-port
               containerPort: 2137
           env:
+            - name: MONITORING_BLOCKING_DISPATCHER_FIXED_POOL_SIZE
+              valueFrom:
+                configMapKeyRef:
+                  name: monitoring-config
+                  key: monitoring-blocking-dispatcher-fixed-pool-size
             - name: MAILER_HOST
               valueFrom:
                 configMapKeyRef:
