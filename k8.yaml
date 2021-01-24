@@ -11,6 +11,7 @@ metadata:
   namespace: {{NAMESPACE}}
 spec:
   replicas: 3
+  minReadySeconds: 60
   selector:
     matchLabels:
       app: monitoring-app
@@ -25,6 +26,12 @@ spec:
           ports:
             - name: http-port
               containerPort: 2137
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 2137
+            initialDelaySeconds: 3
+            periodSeconds: 3
           env:
             - name: MONITORING_BLOCKING_DISPATCHER_FIXED_POOL_SIZE
               valueFrom:
