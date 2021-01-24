@@ -51,6 +51,6 @@ enablePlugins(JavaAppPackaging)
 enablePlugins(DockerPlugin)
 
 packageName := "monitoring-service"
-dockerBaseImage := "adoptopenjdk:11-jre-hotspot"
+dockerBaseImage := "adoptopenjdk:8-jre-hotspot"
 daemonUser in Docker := "root"
 dockerUpdateLatest := true
