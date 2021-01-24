@@ -68,12 +68,13 @@ class MonitoringRunnable(monitoringUrl: MonitoringUrl, mailerService: MailerServ
     * @param monitoringUrl contains monitored URL with id.
     * @return true if error limit was reached, false otherwise.
     */
-  private def updateCount(monitoringUrl: MonitoringUrl): Boolean = {
-    errorCount += 1
-    if (errorCount == monitoringUrl.alertingWindow) {
-      errorCount = 0; true
-    } else false
-  }
+  private def updateCount(monitoringUrl: MonitoringUrl): Boolean =
+    this.synchronized {
+      errorCount += 1
+      if (errorCount == monitoringUrl.alertingWindow) {
+        errorCount = 0; true
+      } else false
+    }
 
   /**
     * Alert users about errors in monitored service.

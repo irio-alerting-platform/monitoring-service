@@ -54,7 +54,7 @@ class MonitoringService(monitoringSchedulerService: MonitoringSchedulerService, 
     */
   def getConfirmation(id: UUID): Future[MonitoringConfirmationResponse] = {
     val res = redisClient.del(id.toString)
-    logger.info("Deleted {} keys for id {}", res, id)
+    logger.info("Deleted {} keys for id {} in redis", res, id)
     Future.successful(MonitoringConfirmationResponse(id))
   }
 

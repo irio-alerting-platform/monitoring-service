@@ -26,19 +26,23 @@ class MailerService(config: MailerConfig, redisClient: Jedis)(
       .startTls(true)()
 
   def sendMail(monitoringUrl: MonitoringUrl): Unit = {
-    logger.info("Sending email from {} to {}", config.from, monitoringUrl.adminFst)
+    logger.info("Sending email from {} to first admin {}", config.from, monitoringUrl.adminFst)
 
     /* Insert URL to redis. Will be deleted if admin goes to confirmation link. */
-    redisClient.set(monitoringUrl.id.toString, "1")
+    val res = redisClient.set(monitoringUrl.id.toString, "1")
+    logger.info("Set {} key for id {} in redis", res, monitoringUrl.id.toString)
 
     send(config.from, monitoringUrl.adminFst, monitoringUrl.id, monitoringUrl.url, monitoringUrl.externalIp)
   }
 
-  def sendBackupMail(monitoringUrl: MonitoringUrl): Unit =
-    if (redisClient.get(monitoringUrl.id.toString) != null) {
-      logger.info("Sending email from {} to {}", config.from, monitoringUrl.adminSnd)
+  def sendBackupMail(monitoringUrl: MonitoringUrl): Unit = {
+    val res = redisClient.get(monitoringUrl.id.toString)
+    logger.info("Got {} key for id {} from redis", res, monitoringUrl.id.toString)
+    if (res != null) {
+      logger.info("Sending backup email from {} to second admin {}", config.from, monitoringUrl.adminSnd)
       send(config.from, monitoringUrl.adminSnd, monitoringUrl.id, monitoringUrl.url, monitoringUrl.externalIp)
     }
+  }
 
   private def send(
     fromAddr: InternetAddress,
