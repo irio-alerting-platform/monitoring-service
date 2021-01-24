@@ -48,7 +48,7 @@ class MailerService(config: MailerConfig, redisClient: Jedis)(
     externalIp: String
   ): Unit = {
     val subject          = subjectString()
-    val confirmationLink = confirmationLinkString(config.httpPort, externalIp, id)
+    val confirmationLink = confirmationLinkString(externalIp, id)
     val content          = contentString(url, confirmationLink)
     mailer(
       Envelope

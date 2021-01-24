@@ -24,11 +24,10 @@ class MailerServiceSpec(implicit ee: ExecutionEnv)
 
   val mailerConfig =
     MailerConfig(
-      host     = "example-host",
-      port     = 587,
-      from     = new InternetAddress("from@example.com"),
-      pass     = "password1234",
-      httpPort = 2137
+      host = "example-host",
+      port = 587,
+      from = new InternetAddress("from@example.com"),
+      pass = "password1234"
     )
 
   trait TestCase extends Scope {
@@ -46,7 +45,7 @@ class MailerServiceSpec(implicit ee: ExecutionEnv)
       val from             = mailerConfig.from
       val to               = url.adminFst
       val subject          = subjectString()
-      val confirmationLink = confirmationLinkString(mailerConfig.httpPort, url.externalIp, url.id)
+      val confirmationLink = confirmationLinkString(url.externalIp, url.id)
       val content          = contentString(url.url, confirmationLink)
 
       // when
@@ -81,7 +80,7 @@ class MailerServiceSpec(implicit ee: ExecutionEnv)
       val from             = mailerConfig.from
       val to               = url.adminSnd
       val subject          = subjectString()
-      val confirmationLink = confirmationLinkString(mailerConfig.httpPort, url.externalIp, url.id)
+      val confirmationLink = confirmationLinkString(url.externalIp, url.id)
       val content          = contentString(url.url, confirmationLink)
 
       // when
