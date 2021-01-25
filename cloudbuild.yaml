@@ -41,6 +41,55 @@ steps:
   - -n=${_STAGING_NS}
   waitFor: ['push monitoring container', 'substitute monitoring deployment file for staging']
 
+- id: 'copy functional tests secret'
+  name: "gcr.io/cloud-builders/gcloud"
+  entrypoint: 'bash'
+  args: [ '-c', 'gcloud secrets versions access latest --secret=github_access_token > /root/.ssh/id_github' ]
+  volumes:
+    - name: 'ssh'
+      path: /root/.ssh
+  waitFor: ['-']
+
+- id: 'setup github access for fetching functional tests'
+  name: 'gcr.io/cloud-builders/git'
+  entrypoint: 'bash'
+  args:
+    - '-c'
+    - |
+      chmod 600 /root/.ssh/id_github
+      cat <<EOF >/root/.ssh/config
+      Hostname github.com
+      IdentityFile /root/.ssh/id_github
+      EOF
+      ssh-keyscan -t rsa github.com > /root/.ssh/known_hosts
+  volumes:
+    - name: 'ssh'
+      path: /root/.ssh
+  waitFor: ['copy functional tests secret']
+
+- id: 'clone functional tests repository'
+  name: 'gcr.io/cloud-builders/git'
+  args:
+    - clone
+    - git@github.com:irio-alerting-platform/functional-tests.git
+  volumes:
+    - name: 'ssh'
+      path: /root/.ssh
+  waitFor: ['setup github access for fetching functional tests']
+
+- id: 'run functional tests'
+  name: "gcr.io/cloud-builders/kubectl"
+  entrypoint: 'bash'
+  args:
+    - '-c'
+    - |
+      curl https://bootstrap.pypa.io/3.4/get-pip.py -o get-pip.py &&
+      python3 get-pip.py &&
+      cd functional-tests &&
+      pip3 install -r requirements.txt &&
+      python3 run.py
+  waitFor: ['clone functional tests repository', 'deploy monitoring to staging']
+
 - id: 'substitute monitoring deployment file for production'
   name: 'bash'
   entrypoint: /bin/sh
@@ -58,7 +107,7 @@ steps:
   - apply
   - -f=/workspace/k8_production.yaml
   - -n=${_PRODUCTION_NS}
-  waitFor: ['push monitoring container', 'substitute monitoring deployment file for production']
+  waitFor: ['push monitoring container', 'substitute monitoring deployment file for production', 'run functional tests']
 
 substitutions:
   _STAGING_NS: staging
