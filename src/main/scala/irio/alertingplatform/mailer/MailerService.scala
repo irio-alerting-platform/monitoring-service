@@ -25,6 +25,11 @@ class MailerService(config: MailerConfig, redisClient: Jedis)(
       .as(config.from.toString, config.pass)
       .startTls(true)()
 
+  /**
+    * Insert a new mapping to redis and sends e-mail to the first admin.
+    *
+    * @param monitoringUrl monitored URL
+    */
   def sendMail(monitoringUrl: MonitoringUrl): Unit = {
     logger.info("Sending email from {} to first admin {}", config.from, monitoringUrl.adminFst)
 
@@ -35,6 +40,11 @@ class MailerService(config: MailerConfig, redisClient: Jedis)(
     send(config.from, monitoringUrl.adminFst, monitoringUrl.id, monitoringUrl.url, monitoringUrl.externalIp)
   }
 
+  /**
+    * If the mapping was not removed from redis, a backup e-mail is sent to the second admin.
+    *
+    * @param monitoringUrl monitored URL
+    */
   def sendBackupMail(monitoringUrl: MonitoringUrl): Unit = {
     val res = redisClient.get(monitoringUrl.id.toString)
     logger.info("Got {} key for id {} from redis", res, monitoringUrl.id.toString)

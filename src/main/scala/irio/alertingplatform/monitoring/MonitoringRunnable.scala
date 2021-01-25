@@ -3,7 +3,7 @@ package irio.alertingplatform.monitoring
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, Cancellable}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import irio.alertingplatform.mailer.MailerService
@@ -31,8 +31,7 @@ class MonitoringRunnable(monitoringUrl: MonitoringUrl, mailerService: MailerServ
   private var errorCount = 0
 
   /**
-    * Sends a request to monitored URL and collects the results.
-    * Results are collected in [[errorCount]].
+    * Sends a request to monitored URL and collects the results in [[errorCount]].
     */
   override def run(): Unit = {
     logger.info("Monitoring URL {}", monitoringUrl)
@@ -41,15 +40,16 @@ class MonitoringRunnable(monitoringUrl: MonitoringUrl, mailerService: MailerServ
         logger.error("Request failed for URL {} with exception {}", monitoringUrl, exception.getMessage)
       case Success(HttpResponse(statusCode @ StatusCodes.OK, _, requestEntity, _)) =>
         requestEntity.discardBytes()
-        logger.info("Request returned status code {} for URL {}", statusCode, monitoringUrl)
+        logger.info("Request returned {} for URL {}", statusCode, monitoringUrl)
+        resetCount
       case Success(HttpResponse(statusCode, _, requestEntity, _)) =>
         requestEntity.discardBytes()
-        logger.warn("Request returned status code {} for URL {}", statusCode, monitoringUrl)
-        if (updateCount(monitoringUrl) && (redisClient.get(monitoringUrl.id.toString) == null)) {
+        logger.warn("Request returned {} for URL {}", statusCode, monitoringUrl)
+        if (updateCount(monitoringUrl.alertingWindow) && (redisClient.get(monitoringUrl.id.toString) == null)) {
           logger.warn("Error limit reached for URL {}", monitoringUrl)
           alertUsers(monitoringUrl)
         }
-      case _ => logger.warn("Request didn't return HttpResponse")
+      case _ => logger.warn("Request for URL {} returned unhandled response or not an HttpResponse", monitoringUrl)
     }(ec)
   }
 
@@ -65,21 +65,25 @@ class MonitoringRunnable(monitoringUrl: MonitoringUrl, mailerService: MailerServ
   /**
     * Updates [[errorCount]] for URL specified in the argument.
     *
-    * @param monitoringUrl contains monitored URL with id.
+    * @param alertingWindow error count limit.
     * @return true if error limit was reached, false otherwise.
     */
-  private def updateCount(monitoringUrl: MonitoringUrl): Boolean =
-    this.synchronized {
-      errorCount += 1
-      if (errorCount == monitoringUrl.alertingWindow) {
-        errorCount = 0; true
-      } else false
-    }
+  private def updateCount(alertingWindow: Int): Boolean = this.synchronized {
+    errorCount += 1
+    if (errorCount == alertingWindow) true else false
+  }
+
+  /**
+    * Resets [[errorCount]] when request returns 200.
+    */
+  private def resetCount: Unit = this.synchronized {
+    errorCount = 0
+  }
 
   /**
     * Alert users about errors in monitored service.
     */
-  private def alertUsers(monitoringUrl: MonitoringUrl) = {
+  private def alertUsers(monitoringUrl: MonitoringUrl): Cancellable = {
     system.scheduler.scheduleOnce(FirstEmailInitialDelay)(mailerService.sendMail(monitoringUrl))(emailDispatcher)
     system.scheduler.scheduleOnce(monitoringUrl.allowedResponseTime)(mailerService.sendBackupMail(monitoringUrl))(
       emailDispatcher
@@ -118,5 +122,4 @@ object MonitoringRunnable {
       )
   }
 
-  class ErrorCount(var count: Int)
 }
