@@ -20,16 +20,6 @@ spec:
       labels:
         app: monitoring-app
     spec:
-      affinity:
-        podAntiAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
-                matchExpressions:
-                  - key: "app"
-                    operator: In
-                    values:
-                      - monitoring-app
-              topologyKey: "kubernetes.io/hostname"
       containers:
         - name: monitoring-container
           image: "gcr.io/{{PROJECT_ID}}/monitoring-service:{{SHORT_SHA}}"
