@@ -76,12 +76,11 @@ class MailerServiceSpec(implicit ee: ExecutionEnv)
   "sendBackupMail" should {
     "send mail to second admin" in new TestCase {
       // given
-      val url              = MonitoringUrlGenerator.generate()
-      val from             = mailerConfig.from
-      val to               = url.adminSnd
-      val subject          = subjectString()
-      val confirmationLink = confirmationLinkString(url.externalIp, url.id)
-      val content          = contentString(url.url, confirmationLink)
+      val url     = MonitoringUrlGenerator.generate()
+      val from    = mailerConfig.from
+      val to      = url.adminSnd
+      val subject = subjectString()
+      val content = contentStringBackup(url.url)
 
       // when
       when(redisClient.get(url.id.toString)).thenReturn("1")

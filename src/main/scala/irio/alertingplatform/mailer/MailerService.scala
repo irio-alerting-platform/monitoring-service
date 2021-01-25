@@ -1,7 +1,5 @@
 package irio.alertingplatform.mailer
 
-import java.util.UUID
-
 import akka.actor.ActorSystem
 import courier.{Envelope, Mailer, Text}
 import irio.alertingplatform.mailer.MailerServiceConfig.MailerConfig
@@ -37,7 +35,9 @@ class MailerService(config: MailerConfig, redisClient: Jedis)(
     val res = redisClient.set(monitoringUrl.id.toString, "1")
     logger.info("Set {} key for id {} in redis", res, monitoringUrl.id.toString)
 
-    send(config.from, monitoringUrl.adminFst, monitoringUrl.id, monitoringUrl.url, monitoringUrl.externalIp)
+    val confirmationLink = confirmationLinkString(monitoringUrl.externalIp, monitoringUrl.id)
+    val content          = contentString(monitoringUrl.url, confirmationLink)
+    send(config.from, monitoringUrl.adminFst, content)
   }
 
   /**
@@ -50,20 +50,13 @@ class MailerService(config: MailerConfig, redisClient: Jedis)(
     logger.info("Got {} key for id {} from redis", res, monitoringUrl.id.toString)
     if (res != null) {
       logger.info("Sending backup email from {} to second admin {}", config.from, monitoringUrl.adminSnd)
-      send(config.from, monitoringUrl.adminSnd, monitoringUrl.id, monitoringUrl.url, monitoringUrl.externalIp)
+      val content = contentStringBackup(monitoringUrl.url)
+      send(config.from, monitoringUrl.adminSnd, content)
     }
   }
 
-  private def send(
-    fromAddr: InternetAddress,
-    toAddr: InternetAddress,
-    id: UUID,
-    url: String,
-    externalIp: String
-  ): Unit = {
-    val subject          = subjectString()
-    val confirmationLink = confirmationLinkString(externalIp, id)
-    val content          = contentString(url, confirmationLink)
+  private def send(fromAddr: InternetAddress, toAddr: InternetAddress, content: String): Unit = {
+    val subject = subjectString()
     mailer(
       Envelope
         .from(fromAddr)

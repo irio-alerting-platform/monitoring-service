@@ -30,7 +30,7 @@ spec:
             httpGet:
               path: /healthz
               port: 2137
-            initialDelaySeconds: 3
+            initialDelaySeconds: 20
             periodSeconds: 3
           env:
             - name: MONITORING_BLOCKING_DISPATCHER_FIXED_POOL_SIZE
